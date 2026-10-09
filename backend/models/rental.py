@@ -30,10 +30,17 @@ class Rental(Base):
     from_date: Mapped[date] = mapped_column(Date)
     to_date: Mapped[date] = mapped_column(Date)
 
+    extra_charges: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("0.00") 
+        nullable=False
+    )
+
     original_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     discount: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
         default=Decimal("0.00")
+
     )
     final_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
