@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import ForeignKey, Numeric, Date, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from base import Base
+from backend.models.base import Base
 
 class Rental(Base):
     __tablename__ = "rentals"

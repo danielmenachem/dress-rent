@@ -1,19 +1,23 @@
-from dataclasses import dataclass
-from linked_list import LinkedList
+from decimal import Decimal
 
-@dataclass
-class Dress:
-    _next_id: ClassVar[int] = 1
+from sqlalchemy import String, Numeric, Boolean
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-    designer: str
-    color: str
-    size: str
-    price: float
-    image_path: str
+from backend.models.base import Base
 
-    dress_id: int = field(init=False)
-    dress_history: LinkedList = field(default_factory=LinkedList)
 
-    def __post_init__(self):
-        self.dress_id = Dress._next_id
-        Dress._next_id += 1
+class Dress(Base):
+    __tablename__ = "dresses"
+    
+    dress_id: Mapped[int] = mapped_column(primary_key=True)
+
+    designer: Mapped[str] = mapped_column(String(100))
+    color: Mapped[str] = mapped_column(String(50))
+    size: Mapped[str] = mapped_column(String(10))
+    price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    image_path: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    dress_rentals: Mapped[list["Rental"]] = relationship(
+        back_populates="dress"
+    )
