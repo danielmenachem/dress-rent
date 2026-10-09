@@ -60,6 +60,9 @@ def update_dress(
 def remove_dress(session: Session, dress_id: int) -> None:
     dress = get_dress(session, dress_id)
 
+    if not dress.is_active:
+        raise ValueError(f"Dress with id {dress_id} is already inactive")
+    
     dress.is_active = False
     session.commit()
 
@@ -75,3 +78,12 @@ def get_dress(session: Session, dress_id: int) -> Dress:
         raise ValueError(f"Dress with id {dress_id} not found")
     
     return dress
+
+def reactivate_dress(session: Session, dress_id: int) -> Dress:
+    dress = get_dress(session, dress_id)
+
+    if dress.is_active:
+        raise ValueError(f"Dress with id {dress_id} is already active")
+    
+    dress.is_active = True
+    session.commit()
