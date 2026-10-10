@@ -66,10 +66,6 @@ def remove_dress(session: Session, dress_id: int) -> None:
     dress.is_active = False
     session.commit()
 
-def get_dresses(session: Session) -> list[Dress]:
-    stmt = select(Dress).where(Dress.is_active.is_(True))
-
-    return list(session.scalars(stmt).all())
 
 def get_dress(session: Session, dress_id: int) -> Dress:
     dress = session.get(Dress, dress_id)
@@ -78,6 +74,11 @@ def get_dress(session: Session, dress_id: int) -> Dress:
         raise ValueError(f"Dress with id {dress_id} not found")
     
     return dress
+
+def get_dresses(session: Session) -> list[Dress]:
+    stmt = select(Dress).where(Dress.is_active.is_(True))
+
+    return list(session.scalars(stmt).all())
 
 def reactivate_dress(session: Session, dress_id: int) -> Dress:
     dress = get_dress(session, dress_id)
