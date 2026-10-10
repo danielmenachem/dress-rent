@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from backend.models.rental import Rental
 from backend.services.dress_service import get_dress
 from backend.models.customer import Customer
+from backend.services.customer_service import get_customer_by_id
 
 # is it possible to return and take the dress on the same day? if yes, then the following function should be 
 # modified to allow that
@@ -14,7 +15,8 @@ def is_available(
         session: Session,
         dress_id: int,
         from_date: date,
-        to_date: date
+        to_date: date,
+        exclude_rental_id: int | None = None
 ) -> bool:
     if from_date > to_date:
         raise ValueError("from_date cannot be later than to_date.")
@@ -31,6 +33,9 @@ def is_available(
         Rental.status != "cancelled"
     )
 
+    if exclude_rental_id is not None:
+        stmt = stmt.where(Rental.rental_id != exclude_rental_id)
+
     existing_rentals = session.scalars(stmt).first()
 
     return existing_rentals is None
@@ -41,10 +46,10 @@ def create_rental(
         customer_id: int,
         from_date: date,
         to_date: date,
-        original_price: Decimal,
-        discount: Decimal = Decimal("0.00")
+        discount: Decimal = Decimal("0.00"),
+        extra_charges: Decimal = Decimal("0.00")
 ) -> Rental:
-    customer = session.get(Customer, customer_id)
+    get_customer_by_id(session, customer_id)
 
     if not is_available(session, dress_id, from_date, to_date):
         raise ValueError(f"Dress with ID {dress_id} is not available for the selected dates.")
@@ -52,10 +57,13 @@ def create_rental(
     dress = get_dress(session, dress_id)
     original_price = dress.price
 
-    if discount < Decimal("0.00") or discount > original_price:
-        raise ValueError(f"Discount must be between 0 and the original price of {original_price}.")
+    if extra_charges < 0:
+        raise ValueError("Extra charges cannot be negative")
 
-    final_price = original_price - discount
+    if discount < 0 or discount > original_price + extra_charges:
+        raise ValueError("Invalid discount amount")
+
+    final_price = original_price + extra_charges - discount
 
     new_rental = Rental(
         dress_id=dress_id,
@@ -64,7 +72,7 @@ def create_rental(
         to_date=to_date,
         original_price=original_price,
         discount=discount,
-        extra_charges=Decimal("0.00"),
+        extra_charges=extra_charges,
         final_price=final_price
     )
 
@@ -73,3 +81,85 @@ def create_rental(
     session.refresh(new_rental)
 
     return new_rental
+
+def get_rental(session: Session, rental_id: int) -> Rental:
+    rental = session.get(Rental, rental_id)
+
+    if rental is None:
+        raise ValueError(f"Rental with ID {rental_id} not found.")
+    
+    return rental
+
+def get_rentals(session: Session) -> list[Rental]:
+    stmt = select(Rental)
+
+    return list(session.scalars(stmt).all())
+
+def update_rental(
+        session: Session,
+        rental_id: int,
+        from_date: date | None = None,
+        to_date: date | None = None,
+        discount: Decimal | None = None,
+        extra_charges: Decimal | None = None,
+) -> Rental:
+    rental = get_rental(session, rental_id)
+
+    new_from_date = from_date if from_date is not None else rental.from_date
+    new_to_date = to_date if to_date is not None else rental.to_date
+    
+    if from_date is not None or to_date is not None:
+        if not is_available(
+            session, 
+            rental.dress_id,
+            new_from_date,
+            new_to_date,
+            exclude_rental_id=rental_id
+        ):
+            raise ValueError(f"Dress with ID {rental.dress_id} is not available for the updated dates.")
+
+
+    new_extra_charges = extra_charges if extra_charges is not None else rental.extra_charges
+    new_discount = discount if discount is not None else rental.discount
+
+    if new_extra_charges < 0:
+        raise ValueError("Extra charges cannot be negative")
+
+    if new_discount < 0 or new_discount > rental.original_price + new_extra_charges:
+        raise ValueError("Invalid discount amount")
+
+    rental.from_date = new_from_date
+    rental.to_date = new_to_date
+    rental.extra_charges = new_extra_charges
+    rental.discount = new_discount
+
+    # Recalculate final price
+    rental.final_price = rental.original_price + rental.extra_charges - rental.discount
+
+    session.commit()
+    session.refresh(rental)
+
+    return rental
+
+def cancel_rental(session: Session, rental_id:int) -> Rental:
+    rental = get_rental(session, rental_id)
+
+    if rental.status == "cancelled":
+        raise ValueError(f"Rental with ID {rental_id} is already cancelled.")
+    
+    rental.status = "cancelled"
+
+    session.commit()
+    session.refresh(rental)
+
+    return rental
+
+def get_rentals_by_customer(session: Session, customer_id: int) -> list[Rental]:
+    stmt = select(Rental).where(Rental.customer_id == customer_id)
+
+    return list(session.scalars(stmt).all())
+
+def get_rentals_by_dress(session: Session, dress_id: int) -> list[Rental]:
+    stmt = select(Rental).where(Rental.dress_id == dress_id)
+
+    return list(session.scalars(stmt).all())

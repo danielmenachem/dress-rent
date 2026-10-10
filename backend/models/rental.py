@@ -32,7 +32,7 @@ class Rental(Base):
 
     extra_charges: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
-        default=Decimal("0.00") 
+        default=Decimal("0.00"), 
         nullable=False
     )
 
