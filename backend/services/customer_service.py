@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from backend.models.customer import Customer
 
+# Add a new customer to the database
 def add_customer(
         session: Session,
         first_name: str,
@@ -26,6 +27,7 @@ def add_customer(
 
     return new_customer
 
+# Update an existing customer's information in the database
 def update_customer(
         session: Session,
         customer_id: int, 
@@ -54,6 +56,7 @@ def update_customer(
 
     return customer
 
+# Retrieve a customer by their ID from the database
 def get_customer_by_id(session: Session, customer_id: int) -> Customer:
     customer = session.get(Customer, customer_id)
 
@@ -62,12 +65,14 @@ def get_customer_by_id(session: Session, customer_id: int) -> Customer:
     
     return customer
 
+# Retrieve a customer by their phone number from the database
 def get_customer_by_phone(session: Session, phone_number: str) -> Customer | None:
     stmt = select(Customer).where(Customer.phone_number == phone_number)
     customer = session.scalars(stmt).first()
 
     return customer
 
+# Retrieve all customers from the database
 def get_customers(session: Session) -> list[Customer]:
     stmt = select(Customer)
     return list(session.scalars(stmt).all())

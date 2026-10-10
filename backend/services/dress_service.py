@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from backend.models.dress import Dress
 
+# Add a new dress to the database
 def add_dress(
         session: Session,
         designer: str,
@@ -26,6 +27,7 @@ def add_dress(
 
     return new_dress
 
+# Update an existing dress's information in the database
 def update_dress(
         session: Session,
         dress_id: int,
@@ -57,6 +59,8 @@ def update_dress(
 
     return dress
 
+# Remove a dress from the database (mark as inactive).  
+# The dress is not deleted from the database, but marked as inactive for record-keeping purposes
 def remove_dress(session: Session, dress_id: int) -> None:
     dress = get_dress(session, dress_id)
 
@@ -67,6 +71,7 @@ def remove_dress(session: Session, dress_id: int) -> None:
     session.commit()
 
 
+# Retrieve a dress by its ID from the database
 def get_dress(session: Session, dress_id: int) -> Dress:
     dress = session.get(Dress, dress_id)
 
@@ -75,11 +80,13 @@ def get_dress(session: Session, dress_id: int) -> Dress:
     
     return dress
 
+# Retrieve all active dresses from the database
 def get_dresses(session: Session) -> list[Dress]:
     stmt = select(Dress).where(Dress.is_active.is_(True))
 
     return list(session.scalars(stmt).all())
 
+# Reactivate a dress in the database (mark as active)
 def reactivate_dress(session: Session, dress_id: int) -> Dress:
     dress = get_dress(session, dress_id)
 
