@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from backend.models import dress, customer, rental
 from backend.database import get_db
-from backend.services.dress_service import get_dresses, get_dress, add_dress, update_dress
+from backend.services.dress_service import get_dresses, get_dress, add_dress, update_dress, remove_dress, reactivate_dress
 from backend.schemas.dress import DressResponse, DressCreate, DressUpdate
 
 app = FastAPI()
@@ -56,5 +56,20 @@ def patch_dress(
             **updates
         )
         return updated_dress
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    
+@app.delete("/dresses/{dress_id}", status_code=204)
+def delete_dress(dress_id: int, session: Session = Depends(get_db)):
+    try:
+        remove_dress(session, dress_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    
+@app.patch("/dresses/{dress_id}/reactivate", response_model=DressResponse)
+def reactivate_dress_endpoint(dress_id: int, session: Session = Depends(get_db)):
+    try:
+        reactivated_dress = reactivate_dress(session, dress_id)
+        return reactivated_dress
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

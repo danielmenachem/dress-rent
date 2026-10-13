@@ -81,8 +81,30 @@ def get_dress(session: Session, dress_id: int) -> Dress:
     return dress
 
 # Retrieve all active dresses from the database
-def get_dresses(session: Session) -> list[Dress]:
-    stmt = select(Dress).where(Dress.is_active.is_(True))
+def get_dresses(
+        session: Session, 
+        status: str = "active",
+        designer: str | None = None,
+        color: str | None = None,
+        size: str | None = None
+        ) -> list[Dress]:
+    stmt = select(Dress)
+
+    if status == "active":
+        stmt = stmt.where(Dress.is_active == True)
+    elif status == "inactive":
+        stmt = stmt.where(Dress.is_active == False)
+    elif status != "all":
+        raise ValueError(f"Invalid status '{status}'. Must be 'active', 'inactive', or 'all'.")
+    
+    if designer is not None:
+        stmt = stmt.where(Dress.designer == designer)
+    
+    if color is not None:
+        stmt = stmt.where(Dress.color == color)
+    
+    if size is not None:
+        stmt = stmt.where(Dress.size == size)
 
     return list(session.scalars(stmt).all())
 
@@ -95,3 +117,5 @@ def reactivate_dress(session: Session, dress_id: int) -> Dress:
     
     dress.is_active = True
     session.commit()
+
+    return dress
